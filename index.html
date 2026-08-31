@@ -1,90 +1,220 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CAT MBA Free Prep</title>
+  <title>Tree Navigator</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      background: #f7f7f9;
-      color: #1a1a1a;
-      line-height: 1.6;
+      font-family: Arial, sans-serif;
+      color: #222;
     }
-    header {
-      background: #1a1a2e;
-      color: #fff;
-      padding: 32px 20px;
-      text-align: center;
+
+    .page-shell {
+      display: flex;
+      min-height: 100vh;
     }
-    header h1 {
-      margin: 0 0 8px;
-      font-size: 2rem;
+
+    .sidebar {
+      width: 260px;
+      flex: 0 0 auto;
+      border-right: 1px solid #ddd;
+      padding: 16px;
+      overflow-y: auto;
     }
-    header p {
+
+    .sidebar h1 {
+      font-size: 1.1rem;
+      margin: 0 0 12px;
+    }
+
+    .tree-list,
+    .tree-children {
+      list-style: none;
       margin: 0;
-      color: #cfcfe8;
+      padding: 0;
     }
-    main {
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 32px 20px 60px;
+
+    .tree-children {
+      padding-left: 16px;
     }
-    section {
-      background: #fff;
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+
+    .tree-node {
+      margin: 2px 0;
     }
-    section h2 {
-      margin-top: 0;
+
+    .tree-item {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: none;
+      background: none;
+      font: inherit;
+      text-align: left;
+      padding: 6px 4px;
+      cursor: pointer;
+      border-radius: 4px;
     }
-    nav a {
-      color: #4a4ae0;
-      text-decoration: none;
-      margin-right: 16px;
-      font-weight: 600;
+
+    .tree-item:hover {
+      background: #f0f0f0;
     }
-    nav a:hover {
-      text-decoration: underline;
+
+    .tree-item.active {
+      background: #dbeafe;
     }
-    footer {
+
+    .tree-toggle {
+      width: 16px;
+      display: inline-block;
       text-align: center;
-      color: #888;
-      padding: 20px;
-      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .content {
+      flex: 1;
+      padding: 24px;
+    }
+
+    .content h2 {
+      margin-top: 0;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>CAT MBA Free Prep</h1>
-    <p>Free preparation material for the CAT MBA entrance exam</p>
-  </header>
-  <main>
-    <nav>
-      <a href="#introduction">Introduction</a>
-      <a href="docs/">Docs</a>
-    </nav>
-    <section id="introduction">
-      <h2>Introduction</h2>
-      <p>
-        Welcome to CAT MBA Free Prep — a free, open collection of study material
-        for the Common Admission Test (CAT), the entrance exam used by IIMs and
-        other top B-schools in India.
-      </p>
-      <p>
-        This site is a work in progress. New sections covering Quantitative
-        Ability, Verbal Ability &amp; Reading Comprehension, and Data
-        Interpretation &amp; Logical Reasoning will be added over time. Check
-        the <a href="docs/">docs</a> section for detailed guides.
-      </p>
-    </section>
-  </main>
-  <footer>
-    &copy; 2026 catmbafreeprep.github.io
-  </footer>
+  <div class="page-shell">
+    <aside class="sidebar">
+      <h1>Tree Navigator</h1>
+      <nav class="tree" id="treeRoot"></nav>
+    </aside>
+    <main class="content" id="contentPane"></main>
+  </div>
+
+  <script>
+    // Placeholder tree data; relabel/replace nodes as needed.
+    const treeData = [
+      {
+        id: 'subject-1',
+        label: 'Subject 1',
+        description: 'Overview of Subject 1. Replace this text with real content.',
+        children: [
+          { id: 'subject-1-section-1', label: 'Section 1.1', description: 'Details for Subject 1, Section 1.1.', children: [] },
+          { id: 'subject-1-section-2', label: 'Section 1.2', description: 'Details for Subject 1, Section 1.2.', children: [] }
+        ]
+      },
+      {
+        id: 'subject-2',
+        label: 'Subject 2',
+        description: 'Overview of Subject 2. Replace this text with real content.',
+        children: [
+          { id: 'subject-2-section-1', label: 'Section 2.1', description: 'Details for Subject 2, Section 2.1.', children: [] },
+          {
+            id: 'subject-2-section-2',
+            label: 'Section 2.2',
+            description: 'Details for Subject 2, Section 2.2.',
+            children: [
+              { id: 'subject-2-section-2-sub-1', label: 'Sub-section 2.2.1', description: 'Details for Subject 2, Section 2.2, Sub-section 2.2.1.', children: [] }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'subject-3',
+        label: 'Subject 3',
+        description: 'Overview of Subject 3. This subject has no subsections.',
+        children: []
+      }
+    ];
+
+    const state = {
+      openNodes: new Set(['subject-1', 'subject-2', 'subject-2-section-2']),
+      selectedId: 'subject-1'
+    };
+
+    const treeRoot = document.getElementById('treeRoot');
+    const contentPane = document.getElementById('contentPane');
+
+    function findNode(nodes, id) {
+      for (const node of nodes) {
+        if (node.id === id) return node;
+        const found = findNode(node.children, id);
+        if (found) return found;
+      }
+      return null;
+    }
+
+    function renderTree() {
+      treeRoot.innerHTML = '';
+      const list = document.createElement('ul');
+      list.className = 'tree-list';
+      treeData.forEach((node) => renderTreeNode(node, list));
+      treeRoot.appendChild(list);
+    }
+
+    function renderTreeNode(node, container) {
+      const item = document.createElement('li');
+      item.className = 'tree-node';
+
+      const hasChildren = node.children.length > 0;
+      const open = state.openNodes.has(node.id);
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `tree-item${state.selectedId === node.id ? ' active' : ''}`;
+      button.innerHTML = `
+        <span class="tree-toggle">${hasChildren ? (open ? '−' : '+') : '•'}</span>
+        <span>${node.label}</span>
+      `;
+
+      button.addEventListener('click', () => {
+        state.selectedId = node.id;
+        if (hasChildren) {
+          if (open) {
+            state.openNodes.delete(node.id);
+          } else {
+            state.openNodes.add(node.id);
+          }
+        }
+        render();
+      });
+
+      item.appendChild(button);
+
+      if (hasChildren && open) {
+        const childList = document.createElement('ul');
+        childList.className = 'tree-children';
+        node.children.forEach((child) => renderTreeNode(child, childList));
+        item.appendChild(childList);
+      }
+
+      container.appendChild(item);
+    }
+
+    function renderContent() {
+      const node = findNode(treeData, state.selectedId);
+      if (!node) {
+        contentPane.innerHTML = '';
+        return;
+      }
+      contentPane.innerHTML = `
+        <h2>${node.label}</h2>
+        <p>${node.description}</p>
+      `;
+    }
+
+    function render() {
+      renderTree();
+      renderContent();
+    }
+
+    render();
+  </script>
 </body>
 </html>
