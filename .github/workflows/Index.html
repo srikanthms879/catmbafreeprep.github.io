@@ -1,0 +1,1952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E2E Release Tracker</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+    :root {
+      --bg: #f5efe6;
+      --panel: rgba(252, 248, 243, 0.82);
+      --panel-strong: #fffaf4;
+      --panel-border: rgba(72, 57, 44, 0.12);
+      --text: #1f1a17;
+      --muted: #6a5d51;
+      --accent: #d95d39;
+      --accent-deep: #9c3d1f;
+      --accent-soft: rgba(217, 93, 57, 0.14);
+      --teal: #2d6a6a;
+      --teal-soft: rgba(45, 106, 106, 0.12);
+      --gold: #b6822f;
+      --gold-soft: rgba(182, 130, 47, 0.14);
+      --danger: #9f2f2f;
+      --danger-soft: rgba(159, 47, 47, 0.12);
+      --shadow: 0 20px 60px rgba(57, 35, 18, 0.12);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Space Grotesk', sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(217, 93, 57, 0.18), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(45, 106, 106, 0.18), transparent 28%),
+        linear-gradient(160deg, #f7efe2 0%, #efe7dc 48%, #f8f2ea 100%);
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(217, 93, 57, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(217, 93, 57, 0.035) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.65), transparent 90%);
+    }
+
+    .page-shell {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 24px;
+      padding: 24px;
+    }
+
+    .sidebar,
+    .content {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--radius-xl);
+      padding: 24px 20px;
+      min-height: calc(100vh - 48px);
+      position: sticky;
+      top: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 26px;
+    }
+
+    .brand-mark {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #1f1a17 0%, #d95d39 100%);
+      color: #fff6ef;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+
+    .brand-copy h1 {
+      margin: 0;
+      font-size: 1.05rem;
+      line-height: 1.1;
+    }
+
+    .brand-copy p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .sidebar-summary {
+      padding: 16px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(140deg, rgba(31, 26, 23, 0.93), rgba(70, 49, 32, 0.9));
+      color: #fef7ef;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow {
+      font-family: 'IBM Plex Mono', monospace;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      color: inherit;
+      opacity: 0.82;
+    }
+
+    .sidebar-summary strong {
+      display: block;
+      font-size: 1.85rem;
+      margin: 10px 0 6px;
+      line-height: 1;
+    }
+
+    .sidebar-summary span {
+      color: rgba(255, 247, 239, 0.8);
+      font-size: 0.94rem;
+    }
+
+    .tree-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .ghost-button,
+    .tab,
+    .filter-chip,
+    .mobile-nav-button {
+      font: inherit;
+      cursor: pointer;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.56);
+      color: var(--text);
+      border-radius: 999px;
+      transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
+    }
+
+    .ghost-button:hover,
+    .tab:hover,
+    .filter-chip:hover,
+    .mobile-nav-button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(217, 93, 57, 0.28);
+    }
+
+    .ghost-button {
+      padding: 8px 12px;
+      font-size: 0.86rem;
+    }
+
+    .scope-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .scope-label strong {
+      display: block;
+      font-size: 0.96rem;
+    }
+
+    .scope-label span {
+      color: var(--muted);
+      font-size: 0.83rem;
+    }
+
+    .tree {
+      overflow: auto;
+      padding-right: 4px;
+      margin-right: -4px;
+      flex: 1;
+    }
+
+    .tree-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .tree-node {
+      margin-bottom: 8px;
+    }
+
+    .tree-item {
+      width: 100%;
+      border: none;
+      background: transparent;
+      text-align: left;
+      padding: 11px 12px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      color: inherit;
+      transition: background 180ms ease, transform 180ms ease;
+    }
+
+    .tree-item:hover {
+      background: rgba(217, 93, 57, 0.08);
+      transform: translateX(2px);
+    }
+
+    .tree-item.active {
+      background: linear-gradient(120deg, rgba(217, 93, 57, 0.16), rgba(45, 106, 106, 0.1));
+      outline: 1px solid rgba(217, 93, 57, 0.18);
+    }
+
+    .tree-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .tree-indent {
+      display: inline-block;
+      width: 10px;
+      flex: 0 0 auto;
+    }
+
+    .tree-toggle {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      border: 1px solid rgba(31, 26, 23, 0.08);
+      display: grid;
+      place-items: center;
+      font-size: 0.8rem;
+      background: rgba(255, 255, 255, 0.72);
+      flex: 0 0 auto;
+    }
+
+    .tree-title {
+      min-width: 0;
+    }
+
+    .tree-title strong,
+    .tree-title span {
+      display: block;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .tree-title strong {
+      font-size: 0.92rem;
+    }
+
+    .tree-title span {
+      color: var(--muted);
+      font-size: 0.77rem;
+      margin-top: 2px;
+    }
+
+    .tree-count {
+      min-width: 32px;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(31, 26, 23, 0.08);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+      flex: 0 0 auto;
+    }
+
+    .tree-children {
+      list-style: none;
+      margin: 6px 0 0;
+      padding: 0 0 0 10px;
+      border-left: 1px dashed rgba(31, 26, 23, 0.12);
+    }
+
+    .sidebar-footer {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(31, 26, 23, 0.1);
+      color: var(--muted);
+      font-size: 0.83rem;
+      display: grid;
+      gap: 8px;
+    }
+
+    .content {
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      min-height: calc(100vh - 48px);
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .mobile-nav-button {
+      display: none;
+      padding: 10px 14px;
+      width: fit-content;
+    }
+
+    .hero {
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      background:
+        linear-gradient(135deg, rgba(31, 26, 23, 0.95), rgba(64, 52, 40, 0.88)),
+        linear-gradient(120deg, rgba(217, 93, 57, 0.18), transparent 60%);
+      color: #fff7ee;
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+      gap: 20px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      right: -80px;
+      top: -120px;
+      background: radial-gradient(circle, rgba(217, 93, 57, 0.42), transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero h2 {
+      margin: 10px 0 12px;
+      font-size: clamp(1.7rem, 4vw, 2.7rem);
+      line-height: 0.96;
+      max-width: 12ch;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 62ch;
+      color: rgba(255, 247, 238, 0.84);
+      line-height: 1.55;
+      font-size: 0.98rem;
+    }
+
+    .hero-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      align-content: start;
+    }
+
+    .hero-stat {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+    }
+
+    .hero-stat strong {
+      display: block;
+      font-size: 1.5rem;
+      margin-top: 8px;
+    }
+
+    .hero-stat span {
+      color: rgba(255, 247, 238, 0.8);
+      font-size: 0.88rem;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .tabs {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.62);
+      border: 1px solid var(--panel-border);
+    }
+
+    .tab {
+      padding: 11px 16px;
+      font-weight: 500;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, #d95d39, #b64a2a);
+      color: #fff8f1;
+      border-color: transparent;
+      box-shadow: 0 10px 24px rgba(217, 93, 57, 0.22);
+    }
+
+    .scope-chip {
+      padding: 11px 15px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--panel-border);
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+
+    .scope-chip strong {
+      color: var(--text);
+    }
+
+    .panel {
+      display: none;
+      animation: rise 240ms ease;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .metric-card,
+    .info-card,
+    .test-card,
+    .activity-card,
+    .mini-card {
+      background: var(--panel-strong);
+      border: 1px solid rgba(31, 26, 23, 0.08);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 16px 32px rgba(59, 42, 28, 0.07);
+    }
+
+    .metric-card {
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .metric-card::after {
+      content: '';
+      position: absolute;
+      inset: auto -20px -20px auto;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(217, 93, 57, 0.13), transparent 70%);
+    }
+
+    .metric-card strong {
+      display: block;
+      font-size: 1.8rem;
+      margin-top: 14px;
+      line-height: 1;
+    }
+
+    .metric-card span {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .metric-trend {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.85fr);
+      gap: 18px;
+    }
+
+    .info-card,
+    .activity-card,
+    .mini-card {
+      padding: 20px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .section-title h3 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .section-title p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.87rem;
+    }
+
+    .pulse {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 8px rgba(217, 93, 57, 0.12);
+    }
+
+    .team-bars {
+      display: grid;
+      gap: 14px;
+    }
+
+    .team-bar header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+    }
+
+    .bar-track {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(31, 26, 23, 0.08);
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #d95d39, #f0a23f);
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .mini-card strong {
+      display: block;
+      font-size: 1.55rem;
+      margin-top: 10px;
+    }
+
+    .mini-card span {
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .activity-list,
+    .watch-list,
+    .team-checks,
+    .rerun-list,
+    .meta-list,
+    .defect-list,
+    .notes-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .activity-item,
+    .watch-item,
+    .team-check,
+    .rerun-item,
+    .defect-item,
+    .note-item {
+      padding: 14px;
+      border-radius: var(--radius-md);
+      background: rgba(31, 26, 23, 0.03);
+      border: 1px solid rgba(31, 26, 23, 0.06);
+    }
+
+    .activity-item strong,
+    .watch-item strong,
+    .defect-item strong,
+    .note-item strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.93rem;
+    }
+
+    .activity-item span,
+    .watch-item span,
+    .defect-item span,
+    .note-item span,
+    .team-check span,
+    .rerun-item span,
+    .empty-state span {
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .filter-chip {
+      padding: 9px 14px;
+      font-size: 0.87rem;
+    }
+
+    .filter-chip.active {
+      background: var(--text);
+      color: #fff7ee;
+      border-color: transparent;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .test-card {
+      padding: 20px;
+      display: grid;
+      gap: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .test-card::before {
+      content: '';
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 5px;
+      background: var(--status-color, var(--accent));
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .card-header h3 {
+      margin: 8px 0 0;
+      font-size: 1.05rem;
+      line-height: 1.15;
+    }
+
+    .card-subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .status-pill,
+    .tag,
+    .team-status,
+    .defect-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+
+    .status-pill::before,
+    .team-status::before,
+    .defect-pill::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.85;
+    }
+
+    .status-pill[data-tone='passed'],
+    .team-status[data-tone='passed'] {
+      background: var(--teal-soft);
+      color: var(--teal);
+    }
+
+    .status-pill[data-tone='pending'],
+    .team-status[data-tone='pending'] {
+      background: var(--gold-soft);
+      color: var(--gold);
+    }
+
+    .status-pill[data-tone='failed'],
+    .team-status[data-tone='failed'],
+    .defect-pill {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .status-pill[data-tone='rerun'],
+    .team-status[data-tone='rerun'] {
+      background: var(--accent-soft);
+      color: var(--accent-deep);
+    }
+
+    .tag {
+      background: rgba(31, 26, 23, 0.06);
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .meta-list {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .meta-item {
+      padding: 12px;
+      border-radius: var(--radius-md);
+      background: rgba(31, 26, 23, 0.03);
+      border: 1px solid rgba(31, 26, 23, 0.05);
+    }
+
+    .meta-item strong {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .meta-item span {
+      display: block;
+      font-size: 0.92rem;
+      line-height: 1.35;
+    }
+
+    .team-check {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .team-check strong,
+    .rerun-item strong {
+      font-size: 0.92rem;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .rerun-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      padding-top: 2px;
+    }
+
+    .timestamp {
+      color: var(--muted);
+      font-size: 0.83rem;
+    }
+
+    .empty-state {
+      padding: 32px;
+      text-align: center;
+      border: 1px dashed rgba(31, 26, 23, 0.18);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, 0.42);
+    }
+
+    .empty-state strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 1240px) {
+      .page-shell {
+        grid-template-columns: 280px minmax(0, 1fr);
+      }
+
+      .metrics-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 980px) {
+      .page-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        min-height: auto;
+        position: static;
+        display: none;
+      }
+
+      .sidebar.open {
+        display: flex;
+      }
+
+      .mobile-nav-button {
+        display: inline-flex;
+      }
+
+      .hero,
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page-shell,
+      .content {
+        padding: 16px;
+      }
+
+      .hero,
+      .sidebar,
+      .content {
+        border-radius: 22px;
+      }
+
+      .metrics-grid,
+      .meta-grid,
+      .meta-list,
+      .mini-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: stretch;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">E2E</div>
+        <div class="brand-copy">
+          <h1>Release Verification</h1>
+          <p>Cross-team order flow tracker</p>
+        </div>
+      </div>
+
+      <div class="sidebar-summary">
+        <div class="eyebrow">Current release</div>
+        <strong id="release-name">Release 24.08</strong>
+        <span id="release-window">Wave 2 validation across ecommerce to analytics</span>
+      </div>
+
+      <div class="tree-controls">
+        <button class="ghost-button" id="expand-all" type="button">Expand all</button>
+        <button class="ghost-button" id="collapse-all" type="button">Collapse all</button>
+      </div>
+
+      <div class="scope-label">
+        <div>
+          <strong>Project tree</strong>
+          <span>Select a release, flow, team, or scenario group</span>
+        </div>
+        <div class="tree-count" id="tree-selected-count">8</div>
+      </div>
+
+      <div class="tree" id="tree-root"></div>
+
+      <div class="sidebar-footer">
+        <span id="sidebar-summary-line">8 scenarios in scope</span>
+        <span>Passed only when every required team signs off.</span>
+      </div>
+    </aside>
+
+    <main class="content">
+      <button class="mobile-nav-button" id="mobile-nav-toggle" type="button">Show project tree</button>
+
+      <section class="hero">
+        <div>
+          <div class="eyebrow">Program view</div>
+          <h2>One place to see release health and team signoff.</h2>
+          <p>
+            This prototype tracks an order journey from ecommerce through OMS, retail, finance, and analytics.
+            Use the left tree to move between release slices, then switch tabs to review metrics or inspect scenario cards.
+          </p>
+        </div>
+        <div class="hero-meta" id="hero-meta"></div>
+      </section>
+
+      <div class="topbar">
+        <div class="tabs" role="tablist" aria-label="Tracker sections">
+          <button class="tab active" type="button" data-tab="dashboard" role="tab" aria-selected="true">Dashboard</button>
+          <button class="tab" type="button" data-tab="details" role="tab" aria-selected="false">Test Case Details</button>
+        </div>
+        <div class="scope-chip" id="scope-chip">Showing: <strong>All scenarios</strong></div>
+      </div>
+
+      <section class="panel active" id="dashboard-panel">
+        <div class="metrics-grid" id="metrics-grid"></div>
+
+        <div class="dashboard-grid">
+          <div>
+            <div class="info-card">
+              <div class="section-title">
+                <div>
+                  <h3>Team completion</h3>
+                  <p>Pass contribution across required verifier teams</p>
+                </div>
+                <span class="pulse"></span>
+              </div>
+              <div class="team-bars" id="team-bars"></div>
+              <div class="mini-grid" id="mini-grid"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="activity-card" style="margin-bottom: 18px;">
+              <div class="section-title">
+                <div>
+                  <h3>Recent activity</h3>
+                  <p>Latest status changes and reruns</p>
+                </div>
+              </div>
+              <div class="activity-list" id="activity-list"></div>
+            </div>
+
+            <div class="info-card">
+              <div class="section-title">
+                <div>
+                  <h3>Watch list</h3>
+                  <p>Scenarios needing attention before release exit</p>
+                </div>
+              </div>
+              <div class="watch-list" id="watch-list"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="details-panel">
+        <div class="filter-row" id="details-filters"></div>
+        <div class="card-grid" id="card-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const trackerData = {
+      project: 'Global Checkout Modernization',
+      release: {
+        id: 'release-24-08',
+        name: 'Release 24.08',
+        window: 'Wave 2 / Aug 12 - Aug 26',
+        version: 'R24.08-W2',
+        orderFlows: [
+          {
+            id: 'flow-hd-express',
+            name: 'Home Delivery Express',
+            lead: 'Ecommerce',
+            scenarioGroups: [
+              {
+                id: 'grp-eu',
+                name: 'EU shipping label',
+                scenarios: ['tc-fr-hd-express', 'tc-at-shipping-label', 'tc-fr-rerun-analytics']
+              },
+              {
+                id: 'grp-orders',
+                name: 'Order orchestration',
+                scenarios: ['tc-oms-finance-handover', 'tc-retail-invoice-sync']
+              }
+            ]
+          },
+          {
+            id: 'flow-returns',
+            name: 'Returns and refund',
+            lead: 'Retail',
+            scenarioGroups: [
+              {
+                id: 'grp-returns',
+                name: 'Returns validation',
+                scenarios: ['tc-nldc-return-finance', 'tc-refund-analytics-lag', 'tc-b2b-oms-retail']
+              }
+            ]
+          }
+        ],
+        teams: [
+          { id: 'team-ecom', name: 'Ecommerce' },
+          { id: 'team-oms', name: 'OMS' },
+          { id: 'team-retail', name: 'Retail' },
+          { id: 'team-finance', name: 'Finance' },
+          { id: 'team-analytics', name: 'Analytics' }
+        ]
+      },
+      scenarios: [
+        {
+          id: 'tc-fr-hd-express',
+          title: 'FR HD order - Express label generation',
+          summary: 'Checkout creates an express home delivery order and validates label generation through carrier orchestration.',
+          flowId: 'flow-hd-express',
+          groupId: 'grp-eu',
+          locale: 'FR',
+          carrier: 'Chronopost',
+          channel: 'B2C',
+          owner: 'Ecommerce',
+          businessFlow: 'Frontend checkout -> OMS routing -> carrier label -> analytics confirmation',
+          status: 'pending',
+          automationStatus: 'passed',
+          automationRun: 'RUN-240826-019',
+          runAt: '2026-03-25 09:31 UTC',
+          rerunCount: 1,
+          reruns: [
+            { label: 'Initial execution', result: 'failed', when: '2026-03-25 08:42 UTC', note: 'Carrier API returned 502 on label response.' },
+            { label: 'Rerun 1', result: 'passed', when: '2026-03-25 09:31 UTC', note: 'Label generated and OMS event replay completed.' }
+          ],
+          defects: ['JIRA-4821'],
+          notes: [
+            'Analytics verification still pending event consumption in downstream dashboard.',
+            'Retail not required for this scenario.'
+          ],
+          evidence: 'Playwright label payload, OMS request UUID, tracking number, dashboard screenshot reference',
+          testData: {
+            environment: 'SIT2',
+            orderId: 'FRQ077042',
+            customer: 'Test Customer FR-01',
+            sku: 'LW3EEDS',
+            trackingNumber: 'CHRP-885421093FR',
+            sharedWith: 'Also referenced by tc-fr-rerun-analytics'
+          },
+          teams: [
+            { id: 'team-ecom', name: 'Ecommerce', status: 'passed', owner: 'Asha', note: 'Checkout and order submission verified.' },
+            { id: 'team-oms', name: 'OMS', status: 'passed', owner: 'Rohit', note: 'Route and fulfillment events confirmed.' },
+            { id: 'team-finance', name: 'Finance', status: 'passed', owner: 'Lena', note: 'Invoice trigger and tax mapping validated.' },
+            { id: 'team-analytics', name: 'Analytics', status: 'pending', owner: 'Marco', note: 'Waiting for event warehouse refresh.' }
+          ]
+        },
+        {
+          id: 'tc-at-shipping-label',
+          title: 'AT shipping label with non-ESW carrier routing',
+          summary: 'Austria order validates alternate routing when ESW is bypassed and a local carrier label is created.',
+          flowId: 'flow-hd-express',
+          groupId: 'grp-eu',
+          locale: 'AT',
+          carrier: 'Austrian Post',
+          channel: 'B2C',
+          owner: 'OMS',
+          businessFlow: 'Checkout -> OMS rule selection -> local carrier label -> retail handoff',
+          status: 'fully-passed',
+          automationStatus: 'passed',
+          automationRun: 'RUN-240826-021',
+          runAt: '2026-03-25 09:47 UTC',
+          rerunCount: 0,
+          reruns: [
+            { label: 'Primary execution', result: 'passed', when: '2026-03-25 09:47 UTC', note: 'All downstream confirmations returned inside SLA.' }
+          ],
+          defects: [],
+          notes: [
+            'Scenario cleared by all required teams in first pass.'
+          ],
+          evidence: 'Carrier label PDF hash, OMS audit trail, retail receipt acknowledgment',
+          testData: {
+            environment: 'SIT2',
+            orderId: 'ATQ088310',
+            customer: 'Test Customer AT-04',
+            sku: 'MD8AXNS',
+            trackingNumber: 'AUPOST-2249-milestone'
+          },
+          teams: [
+            { id: 'team-ecom', name: 'Ecommerce', status: 'passed', owner: 'Asha', note: 'Order submission path confirmed.' },
+            { id: 'team-oms', name: 'OMS', status: 'passed', owner: 'Rohit', note: 'Fallback carrier rule applied correctly.' },
+            { id: 'team-retail', name: 'Retail', status: 'passed', owner: 'Mina', note: 'Store preparation queue received.' }
+          ]
+        },
+        {
+          id: 'tc-fr-rerun-analytics',
+          title: 'FR shipping label analytics catch-up rerun',
+          summary: 'Validates a replay path where analytics missed initial fulfillment events and requires a scenario rerun.',
+          flowId: 'flow-hd-express',
+          groupId: 'grp-eu',
+          locale: 'FR',
+          carrier: 'Chronopost',
+          channel: 'B2C',
+          owner: 'Analytics',
+          businessFlow: 'OMS event emission -> finance booking -> analytics event lake ingestion',
+          status: 'failed',
+          automationStatus: 'passed',
+          automationRun: 'RUN-240826-024',
+          runAt: '2026-03-25 10:06 UTC',
+          rerunCount: 2,
+          reruns: [
+            { label: 'Initial execution', result: 'failed', when: '2026-03-25 08:58 UTC', note: 'Warehouse topic lag exceeded SLA.' },
+            { label: 'Rerun 1', result: 'failed', when: '2026-03-25 09:28 UTC', note: 'Finance booking arrived, analytics still stale.' },
+            { label: 'Rerun 2', result: 'failed', when: '2026-03-25 10:06 UTC', note: 'Replay succeeded but dashboard aggregation job failed.' }
+          ],
+          defects: ['JIRA-4863', 'JIRA-4871'],
+          notes: [
+            'Scenario should remain failed until analytics rerun verifies final dashboard record count.',
+            'All upstream systems are currently green.'
+          ],
+          evidence: 'Replay trace ID 88c0-a1, finance booking ID F-90818, analytics job failure log',
+          testData: {
+            environment: 'SIT2',
+            orderId: 'FRQ077042',
+            replayTraceId: '88c0-a1',
+            financeBookingId: 'F-90818',
+            sharedWith: 'Reuses order data from tc-fr-hd-express'
+          },
+          teams: [
+            { id: 'team-oms', name: 'OMS', status: 'passed', owner: 'Rohit', note: 'Replay payload resent successfully.' },
+            { id: 'team-finance', name: 'Finance', status: 'passed', owner: 'Lena', note: 'Booking present in ledger.' },
+            { id: 'team-analytics', name: 'Analytics', status: 'failed', owner: 'Marco', note: 'Dashboard aggregation failed after ingestion.' }
+          ]
+        },
+        {
+          id: 'tc-oms-finance-handover',
+          title: 'OMS to finance posting for shipped home delivery order',
+          summary: 'Verifies the accounting handoff after OMS marks a shipment as confirmed.',
+          flowId: 'flow-hd-express',
+          groupId: 'grp-orders',
+          locale: 'GB',
+          carrier: 'DPD',
+          channel: 'B2C',
+          owner: 'Finance',
+          businessFlow: 'OMS shipment confirmation -> finance posting -> analytics shipment fact',
+          status: 'pending',
+          automationStatus: 'passed',
+          automationRun: 'RUN-240826-018',
+          runAt: '2026-03-25 09:22 UTC',
+          rerunCount: 0,
+          reruns: [
+            { label: 'Primary execution', result: 'passed', when: '2026-03-25 09:22 UTC', note: 'Automation and event propagation passed.' }
+          ],
+          defects: [],
+          notes: [
+            'Finance signoff is complete; analytics still needs to validate reporting row.'
+          ],
+          evidence: 'OMS shipment ID, finance journal entry, analytics feed batch number',
+          testData: {
+            environment: 'SIT1',
+            orderId: 'GBQ091120',
+            financeJournalId: 'JNL-55210',
+            analyticsBatch: 'BATCH-240826-018'
+          },
+          teams: [
+            { id: 'team-oms', name: 'OMS', status: 'passed', owner: 'Rohit', note: 'Shipment confirmation emitted.' },
+            { id: 'team-finance', name: 'Finance', status: 'passed', owner: 'Lena', note: 'Journal entry balanced.' },
+            { id: 'team-analytics', name: 'Analytics', status: 'pending', owner: 'Marco', note: 'Awaiting data mart refresh window.' }
+          ]
+        },
+        {
+          id: 'tc-retail-invoice-sync',
+          title: 'Retail management receives invoice sync for store-origin exception',
+          summary: 'Covers an exception path where store-origin order data must be reconciled with finance output.',
+          flowId: 'flow-hd-express',
+          groupId: 'grp-orders',
+          locale: 'DE',
+          carrier: 'DHL',
+          channel: 'B2C',
+          owner: 'Retail',
+          businessFlow: 'OMS exception routing -> retail management -> finance invoice sync',
+          status: 'failed',
+          automationStatus: 'failed',
+          automationRun: 'RUN-240826-015',
+          runAt: '2026-03-25 09:11 UTC',
+          rerunCount: 1,
+          reruns: [
+            { label: 'Initial execution', result: 'failed', when: '2026-03-25 08:49 UTC', note: 'Retail reconciliation endpoint timed out.' },
+            { label: 'Rerun 1', result: 'failed', when: '2026-03-25 09:11 UTC', note: 'Automation still failing before finance handoff.' }
+          ],
+          defects: ['JIRA-4804'],
+          notes: [
+            'This scenario is blocked at automation level and cannot progress to final team pass.'
+          ],
+          evidence: 'Retail API timeout log, OMS exception payload, finance not triggered',
+          testData: {
+            environment: 'SIT1',
+            orderId: 'DEQ073967',
+            retailStoreId: 'STR-0417'
+          },
+          teams: [
+            { id: 'team-retail', name: 'Retail', status: 'failed', owner: 'Mina', note: 'Retail exception API timeout persists.' },
+            { id: 'team-finance', name: 'Finance', status: 'pending', owner: 'Lena', note: 'Awaiting successful retail handoff.' }
+          ]
+        },
+        {
+          id: 'tc-nldc-return-finance',
+          title: 'NLDC return posts refund and finance reversal',
+          summary: 'Return scenario verifies reverse logistics and refund booking end to end.',
+          flowId: 'flow-returns',
+          groupId: 'grp-returns',
+          locale: 'NL',
+          carrier: 'PostNL',
+          channel: 'B2C',
+          owner: 'Finance',
+          businessFlow: 'Returns intake -> OMS reversal -> finance refund -> analytics reversal fact',
+          status: 'fully-passed',
+          automationStatus: 'passed',
+          automationRun: 'RUN-240826-031',
+          runAt: '2026-03-25 10:19 UTC',
+          rerunCount: 0,
+          reruns: [
+            { label: 'Primary execution', result: 'passed', when: '2026-03-25 10:19 UTC', note: 'Refund and reversal fact aligned in same cycle.' }
+          ],
+          defects: [],
+          notes: [
+            'Return and refund closed cleanly with no manual intervention.'
+          ],
+          evidence: 'Return request XML, refund ID, finance reversal batch, analytics snapshot',
+          testData: {
+            environment: 'SIT2',
+            returnId: 'RMA-NL-22190',
+            refundId: 'RF-40218',
+            sharedWith: 'Also referenced by tc-refund-analytics-lag'
+          },
+          teams: [
+            { id: 'team-retail', name: 'Retail', status: 'passed', owner: 'Mina', note: 'Return intake accepted.' },
+            { id: 'team-oms', name: 'OMS', status: 'passed', owner: 'Rohit', note: 'Reverse logistics event emitted.' },
+            { id: 'team-finance', name: 'Finance', status: 'passed', owner: 'Lena', note: 'Refund and reversal matched.' },
+            { id: 'team-analytics', name: 'Analytics', status: 'passed', owner: 'Marco', note: 'Reversal fact visible in dashboard.' }
+          ]
+        },
+        {
+          id: 'tc-refund-analytics-lag',
+          title: 'Refund event analytics lag on return flow',
+          summary: 'Analytics receives the refund event late and requires final validation before release signoff.',
+          flowId: 'flow-returns',
+          groupId: 'grp-returns',
+          locale: 'NL',
+          carrier: 'PostNL',
+          channel: 'B2C',
+          owner: 'Analytics',
+          businessFlow: 'Returns refund -> finance booking -> analytics exposure',
+          status: 'pending',
+          automationStatus: 'passed',
+          automationRun: 'RUN-240826-033',
+          runAt: '2026-03-25 10:42 UTC',
+          rerunCount: 1,
+          reruns: [
+            { label: 'Initial execution', result: 'failed', when: '2026-03-25 10:02 UTC', note: 'Analytics lag exceeded 45-minute SLA.' },
+            { label: 'Rerun 1', result: 'passed', when: '2026-03-25 10:42 UTC', note: 'Ingestion passed, final business signoff pending.' }
+          ],
+          defects: ['JIRA-4895'],
+          notes: [
+            'Defect can be closed only after analytics business user confirms dashboard totals.'
+          ],
+          evidence: 'Refund event replay, dashboard widget screenshot, warehouse partition ID',
+          testData: {
+            environment: 'SIT2',
+            returnId: 'RMA-NL-22190',
+            refundEventId: 'REV-90042',
+            sharedWith: 'Reuses return data from tc-nldc-return-finance'
+          },
+          teams: [
+            { id: 'team-finance', name: 'Finance', status: 'passed', owner: 'Lena', note: 'Refund booking already verified.' },
+            { id: 'team-analytics', name: 'Analytics', status: 'pending', owner: 'Marco', note: 'Waiting for business user approval.' }
+          ]
+        },
+        {
+          id: 'tc-b2b-oms-retail',
+          title: 'B2B strat request routes from OMS to retail allocation',
+          summary: 'B2B order uses strategic allocation response and validates downstream retail management updates.',
+          flowId: 'flow-returns',
+          groupId: 'grp-returns',
+          locale: 'FR',
+          carrier: 'Internal allocation',
+          channel: 'B2B',
+          owner: 'OMS',
+          businessFlow: 'Strategic order request -> OMS allocation -> retail store assignment -> analytics visibility',
+          status: 'fully-passed',
+          automationStatus: 'passed',
+          automationRun: 'RUN-240826-035',
+          runAt: '2026-03-25 10:55 UTC',
+          rerunCount: 0,
+          reruns: [
+            { label: 'Primary execution', result: 'passed', when: '2026-03-25 10:55 UTC', note: 'Allocation response and store assignment passed in one run.' }
+          ],
+          defects: [],
+          notes: [
+            'B2B path ready for release signoff.'
+          ],
+          evidence: 'Strategic response payload, OMS allocation ID, retail assignment confirmation',
+          testData: {
+            environment: 'SIT1',
+            orderId: 'FRB2B-33810',
+            allocationId: 'ALLOC-7742'
+          },
+          teams: [
+            { id: 'team-oms', name: 'OMS', status: 'passed', owner: 'Rohit', note: 'Allocation response stored.' },
+            { id: 'team-retail', name: 'Retail', status: 'passed', owner: 'Mina', note: 'Store assignment complete.' },
+            { id: 'team-analytics', name: 'Analytics', status: 'passed', owner: 'Marco', note: 'B2B visibility confirmed.' }
+          ]
+        }
+      ]
+    };
+
+    const statusConfig = {
+      'fully-passed': { label: 'Fully passed', tone: 'passed', color: '#2d6a6a' },
+      pending: { label: 'Pending team verification', tone: 'pending', color: '#b6822f' },
+      failed: { label: 'Failed', tone: 'failed', color: '#9f2f2f' },
+      rerun: { label: 'Superseded by rerun', tone: 'rerun', color: '#9c3d1f' },
+      passed: { label: 'Automation passed', tone: 'passed', color: '#2d6a6a' }
+    };
+
+    const state = {
+      activeTab: 'dashboard',
+      selectedScope: { type: 'all', id: 'all', label: 'All scenarios' },
+      openNodes: new Set(['root', 'release-24-08', 'flow-hd-express', 'flow-returns', 'teams-root']),
+      activeFilter: 'all'
+    };
+
+    const treeRoot = document.getElementById('tree-root');
+    const metricsGrid = document.getElementById('metrics-grid');
+    const cardGrid = document.getElementById('card-grid');
+    const activityList = document.getElementById('activity-list');
+    const watchList = document.getElementById('watch-list');
+    const teamBars = document.getElementById('team-bars');
+    const miniGrid = document.getElementById('mini-grid');
+    const detailsFilters = document.getElementById('details-filters');
+    const scopeChip = document.getElementById('scope-chip');
+    const dashboardPanel = document.getElementById('dashboard-panel');
+    const detailsPanel = document.getElementById('details-panel');
+    const sidebarSummaryLine = document.getElementById('sidebar-summary-line');
+    const treeSelectedCount = document.getElementById('tree-selected-count');
+    const heroMeta = document.getElementById('hero-meta');
+    const mobileNavToggle = document.getElementById('mobile-nav-toggle');
+    const sidebar = document.getElementById('sidebar');
+
+    const treeModel = buildTreeModel();
+
+    document.querySelectorAll('.tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        state.activeTab = tab.dataset.tab;
+        document.querySelectorAll('.tab').forEach((item) => {
+          const active = item === tab;
+          item.classList.toggle('active', active);
+          item.setAttribute('aria-selected', String(active));
+        });
+        dashboardPanel.classList.toggle('active', state.activeTab === 'dashboard');
+        detailsPanel.classList.toggle('active', state.activeTab === 'details');
+      });
+    });
+
+    document.getElementById('expand-all').addEventListener('click', () => {
+      treeModel.walkableIds.forEach((id) => state.openNodes.add(id));
+      render();
+    });
+
+    document.getElementById('collapse-all').addEventListener('click', () => {
+      state.openNodes = new Set(['root', trackerData.release.id]);
+      render();
+    });
+
+    mobileNavToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      mobileNavToggle.textContent = sidebar.classList.contains('open') ? 'Hide project tree' : 'Show project tree';
+    });
+
+    function buildTreeModel() {
+      const flowMap = new Map(trackerData.release.orderFlows.map((flow) => [flow.id, flow]));
+      const teamsNode = {
+        id: 'teams-root',
+        label: 'Team verification lanes',
+        subtitle: 'Filter by responsible team',
+        type: 'category',
+        children: trackerData.release.teams.map((team) => ({
+          id: team.id,
+          label: team.name,
+          subtitle: 'Verification scope',
+          type: 'team',
+          children: []
+        }))
+      };
+
+      const root = {
+        id: 'root',
+        label: trackerData.project,
+        subtitle: 'Cross-team release tracker',
+        type: 'project',
+        children: [
+          {
+            id: trackerData.release.id,
+            label: trackerData.release.name,
+            subtitle: trackerData.release.window,
+            type: 'release',
+            children: trackerData.release.orderFlows.map((flow) => ({
+              id: flow.id,
+              label: flow.name,
+              subtitle: `${flow.lead} lead flow`,
+              type: 'flow',
+              children: flow.scenarioGroups.map((group) => ({
+                id: group.id,
+                label: group.name,
+                subtitle: `${group.scenarios.length} scenarios`,
+                type: 'group',
+                children: group.scenarios.map((scenarioId) => {
+                  const scenario = trackerData.scenarios.find((item) => item.id === scenarioId);
+                  return {
+                    id: scenario.id,
+                    label: scenario.title,
+                    subtitle: `${scenario.locale} / ${scenario.channel}`,
+                    type: 'scenario',
+                    children: []
+                  };
+                })
+              }))
+            }))
+          },
+          teamsNode
+        ]
+      };
+
+      const walkableIds = [];
+      const collect = (node) => {
+        walkableIds.push(node.id);
+        node.children.forEach(collect);
+      };
+
+      collect(root);
+
+      return {
+        root,
+        flowMap,
+        walkableIds
+      };
+    }
+
+    function getVisibleScenarios() {
+      const selected = state.selectedScope;
+      let scoped = trackerData.scenarios;
+
+      if (selected.type === 'flow') {
+        scoped = scoped.filter((scenario) => scenario.flowId === selected.id);
+      } else if (selected.type === 'group') {
+        scoped = scoped.filter((scenario) => scenario.groupId === selected.id);
+      } else if (selected.type === 'scenario') {
+        scoped = scoped.filter((scenario) => scenario.id === selected.id);
+      } else if (selected.type === 'team') {
+        scoped = scoped.filter((scenario) => scenario.teams.some((team) => team.id === selected.id));
+      }
+
+      if (state.activeFilter !== 'all') {
+        scoped = scoped.filter((scenario) => {
+          if (state.activeFilter === 'needs-rerun') {
+            return scenario.rerunCount > 0;
+          }
+
+          if (state.activeFilter === 'with-defects') {
+            return scenario.defects.length > 0;
+          }
+
+          return scenario.status === state.activeFilter;
+        });
+      }
+
+      return scoped;
+    }
+
+    function getDashboardStats(scenarios) {
+      const total = scenarios.length;
+      const fullyPassed = scenarios.filter((scenario) => scenario.status === 'fully-passed').length;
+      const pending = scenarios.filter((scenario) => scenario.status === 'pending').length;
+      const failed = scenarios.filter((scenario) => scenario.status === 'failed').length;
+      const reruns = scenarios.reduce((sum, scenario) => sum + scenario.rerunCount, 0);
+      const openDefects = scenarios.reduce((sum, scenario) => sum + scenario.defects.length, 0);
+      const automationFailed = scenarios.filter((scenario) => scenario.automationStatus === 'failed').length;
+      const allTeams = trackerData.release.teams.map((team) => {
+        const relevant = scenarios.filter((scenario) => scenario.teams.some((entry) => entry.id === team.id));
+        const passed = relevant.reduce((count, scenario) => count + scenario.teams.filter((entry) => entry.id === team.id && entry.status === 'passed').length, 0);
+        const required = relevant.length;
+
+        return {
+          ...team,
+          passed,
+          required,
+          percentage: required === 0 ? 0 : Math.round((passed / required) * 100)
+        };
+      });
+
+      return {
+        total,
+        fullyPassed,
+        pending,
+        failed,
+        reruns,
+        openDefects,
+        automationFailed,
+        passRate: total === 0 ? 0 : Math.round((fullyPassed / total) * 100),
+        allTeams
+      };
+    }
+
+    function buildRecentActivity(scenarios) {
+      return scenarios
+        .flatMap((scenario) => scenario.reruns.map((rerun, index) => ({
+          title: `${scenario.id.toUpperCase()} · ${rerun.label}`,
+          detail: rerun.note,
+          when: rerun.when,
+          index
+        })))
+        .sort((left, right) => right.when.localeCompare(left.when))
+        .slice(0, 5);
+    }
+
+    function buildWatchList(scenarios) {
+      return scenarios
+        .filter((scenario) => scenario.status !== 'fully-passed')
+        .sort((left, right) => {
+          const severity = { failed: 0, pending: 1, 'fully-passed': 2 };
+          return severity[left.status] - severity[right.status] || right.rerunCount - left.rerunCount;
+        })
+        .slice(0, 4);
+    }
+
+    function renderTree() {
+      treeRoot.innerHTML = '';
+      const list = document.createElement('ul');
+      list.className = 'tree-list';
+      renderTreeNode(treeModel.root, list, 0);
+      treeRoot.appendChild(list);
+    }
+
+    function renderTreeNode(node, container, depth) {
+      const item = document.createElement('li');
+      item.className = 'tree-node';
+      const hasChildren = node.children.length > 0;
+      const selected = state.selectedScope.id === node.id || (state.selectedScope.type === 'all' && node.id === 'root');
+
+      const button = document.createElement('button');
+      button.className = `tree-item${selected ? ' active' : ''}`;
+      button.type = 'button';
+
+      const visibleCount = getNodeCount(node);
+      const open = state.openNodes.has(node.id);
+
+      button.innerHTML = `
+        <span class="tree-main">
+          <span class="tree-indent" style="width:${depth * 10}px"></span>
+          ${hasChildren ? `<span class="tree-toggle">${open ? '−' : '+'}</span>` : '<span class="tree-toggle">•</span>'}
+          <span class="tree-title">
+            <strong>${node.label}</strong>
+            <span>${node.subtitle}</span>
+          </span>
+        </span>
+        <span class="tree-count">${visibleCount}</span>
+      `;
+
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        state.selectedScope = node.id === 'root'
+          ? { type: 'all', id: 'all', label: 'All scenarios' }
+          : { type: node.type, id: node.id, label: node.label };
+
+        if (hasChildren) {
+          if (state.openNodes.has(node.id)) {
+            state.openNodes.delete(node.id);
+          } else {
+            state.openNodes.add(node.id);
+          }
+        }
+
+        if (window.innerWidth <= 980) {
+          sidebar.classList.remove('open');
+          mobileNavToggle.textContent = 'Show project tree';
+        }
+
+        render();
+      });
+
+      item.appendChild(button);
+
+      if (hasChildren && open) {
+        const childList = document.createElement('ul');
+        childList.className = 'tree-children';
+        node.children.forEach((child) => renderTreeNode(child, childList, depth + 1));
+        item.appendChild(childList);
+      }
+
+      container.appendChild(item);
+    }
+
+    function getNodeCount(node) {
+      if (node.type === 'scenario') {
+        return 1;
+      }
+
+      if (node.type === 'team') {
+        return trackerData.scenarios.filter((scenario) => scenario.teams.some((team) => team.id === node.id)).length;
+      }
+
+      let total = 0;
+      node.children.forEach((child) => {
+        total += getNodeCount(child);
+      });
+      return total;
+    }
+
+    function renderHero(stats, scenarios) {
+      heroMeta.innerHTML = '';
+      const cards = [
+        { label: 'Full pass rate', value: `${stats.passRate}%`, detail: 'Scenarios cleared by every required team' },
+        { label: 'In-scope scenarios', value: String(stats.total), detail: `${stats.pending} waiting on signoff` },
+        { label: 'Open defects', value: String(stats.openDefects), detail: `${stats.failed} scenarios blocked` },
+        { label: 'Latest run', value: scenarios[0] ? scenarios.map((item) => item.runAt).sort().slice(-1)[0].slice(11, 16) : '--', detail: 'UTC timestamp for most recent execution' }
+      ];
+
+      cards.forEach((card) => {
+        const node = document.createElement('div');
+        node.className = 'hero-stat';
+        node.innerHTML = `
+          <div class="eyebrow">${card.label}</div>
+          <strong>${card.value}</strong>
+          <span>${card.detail}</span>
+        `;
+        heroMeta.appendChild(node);
+      });
+    }
+
+    function renderDashboard(scenarios) {
+      const stats = getDashboardStats(scenarios);
+      renderHero(stats, scenarios);
+
+      const metricCards = [
+        { label: 'Scenarios', value: stats.total, trend: 'Current selection' },
+        { label: 'Fully passed', value: stats.fullyPassed, trend: `${stats.passRate}% completion` },
+        { label: 'Pending signoff', value: stats.pending, trend: 'Waiting on at least one team' },
+        { label: 'Failures', value: stats.failed, trend: `${stats.automationFailed} blocked in automation` },
+        { label: 'Reruns', value: stats.reruns, trend: 'Historical rerun attempts in scope' },
+        { label: 'Open defects', value: stats.openDefects, trend: 'JIRA references attached to scenarios' }
+      ];
+
+      metricsGrid.innerHTML = '';
+      metricCards.forEach((metric) => {
+        const card = document.createElement('article');
+        card.className = 'metric-card';
+        card.innerHTML = `
+          <span class="eyebrow">${metric.label}</span>
+          <strong>${metric.value}</strong>
+          <div class="metric-trend">${metric.trend}</div>
+        `;
+        metricsGrid.appendChild(card);
+      });
+
+      teamBars.innerHTML = '';
+      stats.allTeams.forEach((team) => {
+        const row = document.createElement('div');
+        row.className = 'team-bar';
+        row.innerHTML = `
+          <header>
+            <strong>${team.name}</strong>
+            <span>${team.passed}/${team.required || 0} verified</span>
+          </header>
+          <div class="bar-track"><div class="bar-fill" style="width:${team.percentage}%"></div></div>
+        `;
+        teamBars.appendChild(row);
+      });
+
+      const miniStats = [
+        { label: 'Automation healthy', value: `${Math.max(stats.total - stats.automationFailed, 0)}/${stats.total || 0}` },
+        { label: 'Teams engaged', value: stats.allTeams.filter((team) => team.required > 0).length },
+        { label: 'Scenarios with reruns', value: scenarios.filter((scenario) => scenario.rerunCount > 0).length },
+        { label: 'Signoff coverage', value: `${stats.total === 0 ? 0 : Math.round((scenarios.flatMap((scenario) => scenario.teams).filter((team) => team.status === 'passed').length / Math.max(scenarios.flatMap((scenario) => scenario.teams).length, 1)) * 100)}%` }
+      ];
+
+      miniGrid.innerHTML = '';
+      miniStats.forEach((stat) => {
+        const card = document.createElement('div');
+        card.className = 'mini-card';
+        card.innerHTML = `
+          <span class="eyebrow">${stat.label}</span>
+          <strong>${stat.value}</strong>
+        `;
+        miniGrid.appendChild(card);
+      });
+
+      activityList.innerHTML = '';
+      buildRecentActivity(scenarios).forEach((activity) => {
+        const item = document.createElement('div');
+        item.className = 'activity-item';
+        item.innerHTML = `
+          <strong>${activity.title}</strong>
+          <span>${activity.detail}</span>
+          <span class="timestamp">${activity.when}</span>
+        `;
+        activityList.appendChild(item);
+      });
+
+      if (!activityList.children.length) {
+        activityList.innerHTML = '<div class="empty-state"><strong>No activity in scope</strong><span>Select a wider scope to see recent reruns and updates.</span></div>';
+      }
+
+      watchList.innerHTML = '';
+      buildWatchList(scenarios).forEach((scenario) => {
+        const item = document.createElement('div');
+        item.className = 'watch-item';
+        item.innerHTML = `
+          <strong>${scenario.title}</strong>
+          <span>${statusConfig[scenario.status].label} · ${scenario.defects.length} defect${scenario.defects.length === 1 ? '' : 's'} · ${scenario.rerunCount} rerun${scenario.rerunCount === 1 ? '' : 's'}</span>
+        `;
+        watchList.appendChild(item);
+      });
+
+      if (!watchList.children.length) {
+        watchList.innerHTML = '<div class="empty-state"><strong>No risks in scope</strong><span>Everything under this selection is fully signed off.</span></div>';
+      }
+    }
+
+    function formatTestDataKey(key) {
+      return key
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, (char) => char.toUpperCase())
+        .trim();
+    }
+
+    function renderDetails(scenarios) {
+      const filters = [
+        { id: 'all', label: 'All' },
+        { id: 'fully-passed', label: 'Fully passed' },
+        { id: 'pending', label: 'Pending' },
+        { id: 'failed', label: 'Failed' },
+        { id: 'needs-rerun', label: 'Needs rerun' },
+        { id: 'with-defects', label: 'With defects' }
+      ];
+
+      detailsFilters.innerHTML = '';
+      filters.forEach((filter) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = `filter-chip${state.activeFilter === filter.id ? ' active' : ''}`;
+        chip.textContent = filter.label;
+        chip.addEventListener('click', () => {
+          state.activeFilter = filter.id;
+          render();
+        });
+        detailsFilters.appendChild(chip);
+      });
+
+      cardGrid.innerHTML = '';
+
+      if (!scenarios.length) {
+        cardGrid.innerHTML = '<div class="empty-state"><strong>No scenarios match this view</strong><span>Change the tree selection or use a different filter to see test case cards.</span></div>';
+        return;
+      }
+
+      scenarios.forEach((scenario) => {
+        const config = statusConfig[scenario.status];
+        const card = document.createElement('article');
+        card.className = 'test-card';
+        card.style.setProperty('--status-color', config.color);
+
+        card.innerHTML = `
+          <div class="card-header">
+            <div>
+              <div class="eyebrow">${scenario.id.toUpperCase()}</div>
+              <h3>${scenario.title}</h3>
+              <div class="card-subtitle">${scenario.summary}</div>
+              <span class="tag">${scenario.businessFlow}</span>
+            </div>
+            <span class="status-pill" data-tone="${config.tone}">${config.label}</span>
+          </div>
+
+          <div class="meta-grid">
+            <div class="meta-item"><strong>Automation</strong><span>${scenario.automationStatus === 'passed' ? 'Passed' : 'Failed'} · ${scenario.automationRun}</span></div>
+            <div class="meta-item"><strong>Owner</strong><span>${scenario.owner}</span></div>
+            <div class="meta-item"><strong>Locale / carrier</strong><span>${scenario.locale} · ${scenario.carrier}</span></div>
+            <div class="meta-item"><strong>Channel</strong><span>${scenario.channel}</span></div>
+          </div>
+
+          <div>
+            <div class="section-title">
+              <div>
+                <h3>Team verification</h3>
+                <p>Scenario passes only when every required team clears it</p>
+              </div>
+            </div>
+            <div class="team-checks">
+              ${scenario.teams.map((team) => `
+                <div class="team-check">
+                  <div>
+                    <strong>${team.name}</strong>
+                    <span>${team.owner} · ${team.note}</span>
+                  </div>
+                  <span class="team-status" data-tone="${team.status === 'passed' ? 'passed' : team.status === 'failed' ? 'failed' : 'pending'}">${team.status}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="meta-list">
+            <div class="meta-item"><strong>Evidence</strong><span>${scenario.evidence}</span></div>
+            <div class="meta-item"><strong>Latest run</strong><span>${scenario.runAt}</span></div>
+          </div>
+
+          <div>
+            <div class="section-title">
+              <div>
+                <h3>Test data used</h3>
+                <p>Same identifiers every team must reference when verifying this scenario</p>
+              </div>
+            </div>
+            <div class="meta-grid">
+              ${Object.entries(scenario.testData || {}).map(([key, value]) => `
+                <div class="meta-item"><strong>${formatTestDataKey(key)}</strong><span>${value}</span></div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div>
+            <div class="section-title">
+              <div>
+                <h3>Rerun timeline</h3>
+                <p>${scenario.rerunCount} rerun${scenario.rerunCount === 1 ? '' : 's'} recorded</p>
+              </div>
+            </div>
+            <div class="rerun-list">
+              ${scenario.reruns.map((rerun) => `
+                <div class="rerun-item">
+                  <div>
+                    <strong>${rerun.label}</strong>
+                    <span>${rerun.note}</span>
+                  </div>
+                  <div style="text-align:right;">
+                    <span class="team-status" data-tone="${rerun.result === 'passed' ? 'passed' : 'failed'}">${rerun.result}</span>
+                    <span class="timestamp">${rerun.when}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div>
+            <div class="section-title">
+              <div>
+                <h3>Defects and notes</h3>
+                <p>External defects stay in JIRA, scenario context stays here</p>
+              </div>
+            </div>
+            <div class="defect-list">
+              ${scenario.defects.length ? scenario.defects.map((defect) => `
+                <div class="defect-item">
+                  <strong>${defect}</strong>
+                  <span>Linked defect for this scenario execution.</span>
+                </div>
+              `).join('') : '<div class="note-item"><strong>No linked defects</strong><span>This scenario currently has no open Jira references.</span></div>'}
+            </div>
+            <div class="notes-list" style="margin-top:12px;">
+              ${scenario.notes.map((note) => `
+                <div class="note-item">
+                  <strong>Note</strong>
+                  <span>${note}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <span class="timestamp">Last execution: ${scenario.runAt}</span>
+            <span class="timestamp">Required teams: ${scenario.teams.length}</span>
+          </div>
+        `;
+
+        cardGrid.appendChild(card);
+      });
+    }
+
+    function renderScopeSummary(scenarios) {
+      const label = state.selectedScope.label;
+      scopeChip.innerHTML = `Showing: <strong>${label}</strong>`;
+      treeSelectedCount.textContent = String(scenarios.length);
+      sidebarSummaryLine.textContent = `${scenarios.length} scenario${scenarios.length === 1 ? '' : 's'} in scope`;
+    }
+
+    function render() {
+      const scenarios = getVisibleScenarios();
+      renderTree();
+      renderScopeSummary(scenarios);
+      renderDashboard(scenarios);
+      renderDetails(scenarios);
+    }
+
+    render();
+  </script>
+</body>
+</html>
